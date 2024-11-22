@@ -17,10 +17,10 @@ public class WineQualityTrainer {
         // Spark Session and Context setup
         SparkSession spark = SparkSession.builder()
                 .appName("WineQualityTrainer")
-                .config("spark.hadoop.fs.s3a.access.key", "YOUR_AWS_ACCESS_KEY")
-                .config("spark.hadoop.fs.s3a.secret.key", "YOUR_AWS_SECRET_KEY")
                 .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com")
+                .config("spark.hadoop.fs.s3a.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") // Use this to reference ~/.aws/credentials
                 .getOrCreate();
+
 
         JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
         sc.setLogLevel("ERROR");
