@@ -1,20 +1,25 @@
-import org.apache.spark.api.java.JavaRDD;
+import java.io.IOException;
+
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.ml.classification.LogisticRegression;
 import org.apache.spark.ml.evaluation.BinaryClassificationEvaluator;
 import org.apache.spark.ml.feature.VectorAssembler;
-import org.apache.spark.ml.linalg.Vector;
-import org.apache.spark.sql.*;
-import org.apache.spark.sql.types.*;
-
-import static org.apache.spark.sql.functions.col;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
+import org.apache.spark.sql.types.DataTypes;
+import org.apache.spark.sql.types.Metadata;
+import org.apache.spark.sql.types.StructField;
+import org.apache.spark.sql.types.StructType;
 
 public class WineQualityTrainer {
     public static void main(String[] args) {
         // Spark Session and Context setup
         SparkSession spark = SparkSession.builder()
                 .appName("WineQualityTrainer")
-                .master("local[*]")
+                .config("spark.hadoop.fs.s3a.access.key", "YOUR_AWS_ACCESS_KEY")
+                .config("spark.hadoop.fs.s3a.secret.key", "YOUR_AWS_SECRET_KEY")
+                .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com")
                 .getOrCreate();
 
         JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
@@ -36,17 +41,17 @@ public class WineQualityTrainer {
                 new StructField("quality", DataTypes.IntegerType, false, Metadata.empty())
         });
 
-        // Load training data
+        // Load training data from S3 bucket
         Dataset<Row> trainingData = spark.read()
                 .option("header", "true")
                 .schema(schema)
-                .csv("TrainingDataset.csv");
+                .csv("s3a://winesparkbucket/TrainingDataset.csv");
 
-        // Load validation data
+        // Load validation data from S3 bucket
         Dataset<Row> validationData = spark.read()
                 .option("header", "true")
                 .schema(schema)
-                .csv("ValidationDataset.csv");
+                .csv("s3a://winesparkbucket/ValidationDataset.csv");
 
         // Assemble feature columns into a single vector column
         String[] featureCols = new String[]{
@@ -88,7 +93,11 @@ public class WineQualityTrainer {
         System.out.println("Validation Accuracy: " + accuracy);
 
         // Save the model for future predictions
-        model.save("logistic-regression-model");
+        try {
+            model.save("logistic-regression-model");
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         spark.stop();
     }
