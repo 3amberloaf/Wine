@@ -1,3 +1,4 @@
+package com.example;
 import java.io.IOException;
 
 import org.apache.spark.api.java.JavaSparkContext;
@@ -18,7 +19,9 @@ public class WineQualityTrainer {
         SparkSession spark = SparkSession.builder()
                 .appName("WineQualityTrainer")
                 .config("spark.hadoop.fs.s3a.endpoint", "s3.amazonaws.com")
-                .config("spark.hadoop.fs.s3a.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") // Use this to reference ~/.aws/credentials
+                .config("spark.hadoop.fs.s3a.access.key", "ASIASKQKXK7AG4K7CJGR") 
+                .config("spark.hadoop.fs.s3a.secret.key", "lhQrL2HmxfeTX3XxemR6Rvm4o7wThxlGhOsSQiB+") 
+                .config("spark.hadoop.fs.s3a.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
                 .getOrCreate();
 
 
@@ -95,6 +98,8 @@ public class WineQualityTrainer {
         // Save the model for future predictions
         try {
             model.save("logistic-regression-model");
+            model.save("hdfs://path/to/save/model");
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -102,3 +107,4 @@ public class WineQualityTrainer {
         spark.stop();
     }
 }
+
