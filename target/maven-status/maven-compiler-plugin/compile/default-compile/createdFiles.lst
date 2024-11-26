@@ -1,2 +1,2 @@
-WineQualityTrainer.class
-WineQualityPrediction.class
+com/example/WineQualityPrediction.class
+com/example/WineQualityTrainer.class

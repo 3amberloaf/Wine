@@ -1,3 +1,4 @@
+package com.example;
 
 import org.apache.spark.ml.PipelineModel;
 import org.apache.spark.ml.evaluation.MulticlassClassificationEvaluator;
