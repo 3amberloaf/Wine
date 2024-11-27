@@ -8,9 +8,9 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <!-- Java version -->
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <dependencies>
@@ -18,6 +18,13 @@
         <dependency>
             <groupId>org.apache.spark</groupId>
             <artifactId>spark-core_2.12</artifactId>
+            <version>3.4.0</version>
+        </dependency>
+
+        <!-- Spark SQL -->
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-sql_2.12</artifactId>
             <version>3.4.0</version>
         </dependency>
 
@@ -42,7 +49,7 @@
             <version>3.3.6</version>
         </dependency>
 
-        <!-- AWS SDK Bundle -->
+        <!-- AWS SDK -->
         <dependency>
             <groupId>com.amazonaws</groupId>
             <artifactId>aws-java-sdk-bundle</artifactId>
@@ -67,24 +74,23 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.0</version>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${main.class}</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
                         <phase>package</phase>
                         <goals>
                             <goal>single</goal>
                         </goals>
-                        <configuration>
-                            <archive>
-                                <manifest>
-                                    <mainClass>${main.class}</mainClass>
-                                </manifest>
-                            </archive>
-                            <descriptorRefs>
-                                <descriptorRef>jar-with-dependencies</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
@@ -92,7 +98,7 @@
     </build>
 
     <profiles>
-        <!-- Profile for Training Application -->
+        <!-- Profile for Trainer Application -->
         <profile>
             <id>trainer</id>
             <properties>
@@ -100,11 +106,10 @@
             </properties>
         </profile>
 
-        <!-- Profile for Prediction Application -->
         <profile>
-            <id>prediction</id>
+            <id>testing</id>
             <properties>
-                <main.class>com.example.WineQualityPrediction</main.class>
+                <main.class>com.example.WineQualityTesting</main.class>
             </properties>
         </profile>
     </profiles>
