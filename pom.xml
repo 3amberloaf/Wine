@@ -4,7 +4,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.example</groupId>
-    <artifactId>wine-quality-trainer</artifactId>
+    <artifactId>random-forest-trainer</artifactId>
     <version>1.0-SNAPSHOT</version>
 
     <properties>
@@ -98,18 +98,12 @@
     </build>
 
     <profiles>
-        <!-- Profile for Trainer Application -->
-        <profile>
-            <id>trainer</id>
-            <properties>
-                <main.class>com.example.WineQualityTrainer</main.class>
-            </properties>
-        </profile>
+        
 
         <profile>
-            <id>testing</id>
+            <id>random-forest-trainer</id>
             <properties>
-                <main.class>com.example.WineQualityTesting</main.class>
+                <main.class>com.example.RandomForestTrainer</main.class>
             </properties>
         </profile>
     </profiles>
