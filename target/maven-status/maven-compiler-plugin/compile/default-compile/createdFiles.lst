@@ -1,2 +1,3 @@
-com/example/WineQualityTesting.class
 com/example/WineQualityTraining.class
+com/example/WineQualityTesting.class
+com/example/RandomForestTrainer.class
