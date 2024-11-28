@@ -33,19 +33,36 @@ public class RandomForestTrainer {
                 .option("sep", ";")
                 .load(trainingPath);
 
+                trainingData.printSchema();
+                trainingData.show(5); 
+                
+
         // Preprocess: Cast all columns except 'quality' to float and rename 'quality' to 'label'
         for (String colName : trainingData.columns()) {
             if (!colName.equals("quality")) {
                 trainingData = trainingData.withColumn(colName, trainingData.col(colName).cast("float"));
             }
         }
-        trainingData = trainingData.withColumnRenamed("quality", "label");
+        trainingData = trainingData.withColumn("label", trainingData.col("quality").cast("double"))
+                                .drop("quality");
+
+
+        trainingData.printSchema();
 
         // Assemble features into a single vector column
         VectorAssembler assembler = new VectorAssembler()
-                .setInputCols(trainingData.columns())
-                .setOutputCol("features");
+        .setInputCols(new String[]{
+            "fixed_acidity", "volatile_acidity", "citric_acid", "residual_sugar",
+            "chlorides", "free_sulfur_dioxide", "total_sulfur_dioxide",
+            "density", "pH", "sulphates", "alcohol"
+        })
+        .setOutputCol("features");
+        
+
         Dataset<Row> assembledData = assembler.transform(trainingData).select("features", "label");
+
+        assembledData.printSchema();
+        assembledData.show(5); // Inspect first 5 rows
 
         // Convert DataFrame to JavaRDD<LabeledPoint>
         JavaRDD<LabeledPoint> labeledPoints = toLabeledPoint(sc, assembledData);
