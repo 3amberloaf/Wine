@@ -18,7 +18,7 @@ public class WineQualityTraining {
 
     public static void main(String[] args) {
         // Configures Spark application single-node testing
-        SparkConf conf = new SparkConf().setAppName("WineQualityTrainer").setMaster("spark://172.31.31.175:7070");
+        SparkConf conf = new SparkConf().setAppName("WineQualityTrainer").setMaster("spark://172.31.31.175:7077");
         JavaSparkContext sc = new JavaSparkContext(conf);
         SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
         String path = args[0];
