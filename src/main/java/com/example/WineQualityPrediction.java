@@ -12,7 +12,7 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.SparkSession; 
 import scala.Tuple2; 
 
-public class WineQualityTesting {
+public class WineQualityPrediction {
 
     public static void main(String[] args) {
         // Initialize Spark configuration 
