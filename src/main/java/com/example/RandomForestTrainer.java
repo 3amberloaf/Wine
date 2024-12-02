@@ -18,7 +18,7 @@ import org.apache.spark.sql.SparkSession;
 public class RandomForestTrainer {
     public static void main(String[] args) {
         // Configure Spark
-        SparkConf conf = new SparkConf().setAppName("RandomForestTrainer").setMaster("spark://172.31.31.175:7070");
+        SparkConf conf = new SparkConf().setAppName("RandomForestTrainer").setMaster("spark://172.31.31.175:7077");
         JavaSparkContext sc = new JavaSparkContext(conf);
         SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
 
