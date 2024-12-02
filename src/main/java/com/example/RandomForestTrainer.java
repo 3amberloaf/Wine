@@ -73,7 +73,7 @@ public class RandomForestTrainer {
         Map<Integer, Integer> categoricalFeaturesInfo = new HashMap<>(); // Example: Specify categorical features if any
 
         // Train the Random Forest model
-        RandomForestModel model = RandomForest.trainClassifier(
+        RandomForestTrainer model = RandomForestTrainer.trainClassifier(
                 labeledPoints,            // JavaRDD
                 10,                       // Number of classes
                 categoricalFeaturesInfo,  // Categorical features map

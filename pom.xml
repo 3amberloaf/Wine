@@ -103,7 +103,7 @@
         <profile>
             <id>wine-quality-trainer</id>
             <properties>
-                <main.class>com.example.WineQualityTraining</main.class>
+                <main.class>com.example.WineQualityTrainer</main.class>
             </properties>
         </profile>
     </profiles>
