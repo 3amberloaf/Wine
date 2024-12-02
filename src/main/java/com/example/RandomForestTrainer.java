@@ -18,13 +18,15 @@ import org.apache.spark.sql.SparkSession;
 public class RandomForestTrainer {
     public static void main(String[] args) {
         // Configure Spark
-        SparkConf conf = new SparkConf().setAppName("RandomForestTrainer").setMaster("local");
+        SparkConf conf = new SparkConf().setAppName("RandomForestTrainer").setMaster("spark://172.31.31.175:7070");
         JavaSparkContext sc = new JavaSparkContext(conf);
         SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
 
         // Path to the training dataset
         String trainingPath = args[0];
-        String modelPath = "./models/random-forest-model";
+        String modelPath = "/home/ubuntu/models/random-forest-model";
+
+
 
         // Load the training dataset
         Dataset<Row> trainingData = spark.read()
@@ -37,7 +39,7 @@ public class RandomForestTrainer {
                 trainingData.show(5); 
                 
 
-        // Preprocess: Cast all columns except 'quality' to float and rename 'quality' to 'label'
+        // Convert all feature columns except 'quality' to float and rename 'quality' to 'label'
         for (String colName : trainingData.columns()) {
             if (!colName.equals("quality")) {
                 trainingData = trainingData.withColumn(colName, trainingData.col(colName).cast("float"));

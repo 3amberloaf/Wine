@@ -18,7 +18,7 @@ public class WineQualityTraining {
 
     public static void main(String[] args) {
         // Configures Spark application single-node testing
-        SparkConf conf = new SparkConf().setAppName("trainwinequality").setMaster("local");
+        SparkConf conf = new SparkConf().setAppName("WineQualityTrainer").setMaster("spark://172.31.31.175:7070");
         JavaSparkContext sc = new JavaSparkContext(conf);
         SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
         String path = args[0];
@@ -57,7 +57,8 @@ public class WineQualityTraining {
         JavaRDD<LabeledPoint> dataset = toLabeledPoint(sc, df_tr);
 
         // Load a pre-trained Random Forest model from S3
-        RandomForestModel RFModel = RandomForestModel.load(sc.sc(), "/sparkwinebucket/trainingmodel.model/");
+        // RandomForestModel RFModel = RandomForestModel.load(sc.sc(), "/sparkwinebucket/trainingmodel.model/");
+        RandomForestModel RFModel = RandomForestModel.load(sc.sc(), "/home/ubuntu/models/random-forest-model");
 
         // Confirm that the model was successfully loaded
         System.out.println("Model loaded successfully");
