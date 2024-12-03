@@ -1,111 +1,107 @@
 package com.example;
 
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.List;
+import java.util.Arrays;
+import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.ml.feature.VectorAssembler;
+import org.apache.spark.mllib.evaluation.MulticlassMetrics;
+import org.apache.spark.mllib.regression.LabeledPoint;
+import org.apache.spark.mllib.tree.model.RandomForestModel;
+import org.apache.spark.sql.Dataset;
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.SparkSession;
 import scala.Tuple2;
 
-import org.apache.spark.SparkConf; 
-import org.apache.spark.api.java.JavaRDD; 
-import org.apache.spark.api.java.JavaSparkContext; 
-import org.apache.spark.ml.feature.VectorAssembler; 
-import org.apache.spark.mllib.evaluation.MulticlassMetrics; 
-import org.apache.spark.mllib.regression.LabeledPoint; 
-
-import org.apache.spark.mllib.tree.model.RandomForestModel; 
-import org.apache.spark.sql.Dataset; 
-import org.apache.spark.sql.Row; 
-import org.apache.spark.sql.SparkSession; 
-
-import java.util.Arrays;
-
 public class WineQualityTraining {
-
     public static void main(String[] args) {
-        // Configures Spark application single-node testing
-        SparkConf conf = new SparkConf().setAppName("WineQualityTrainer").setMaster("spark://172.31.31.175:7077");
+        // Configure Spark
+        SparkConf conf = new SparkConf().setAppName("WineQualityTrainer").setMaster("local[*]");
         JavaSparkContext sc = new JavaSparkContext(conf);
         SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
 
         try {
-            String path = args[0];
+            // Paths
+            String inputPath = "/home/ubuntu/datasets/ValidationDataset.csv";
+            String modelPath = "/home/ubuntu/models/random-forest-model";
+            String outputPath = "/home/ubuntu/predictions/predictions.txt";
 
-            // Load the validation dataset from the given path in CSV format
-            Dataset<Row> val = spark.read()
+            // Load the dataset
+            Dataset<Row> validationData = spark.read()
                     .format("csv")
                     .option("header", "true")
                     .option("sep", ";")
-                    .load(path);
+                    .load(inputPath);
 
-            // Prints and displays loaded data
-            val.printSchema();
-            val.show();
+            validationData.printSchema();
+            validationData.show(5);
 
-            // Cast feature columns to float and rename 'quality' to 'label'
-            for (String colName : val.columns()) {
+            String[] cleanedColumns = Arrays.stream(validationData.columns())
+                    .map(col -> col.replace("\"", "").trim())
+                    .toArray(String[]::new);
+            validationData = validationData.toDF(cleanedColumns);
+
+            validationData.printSchema(); // Verify cleaned column names
+            validationData.show(5);
+
+            // Preprocess columns
+            for (String colName : validationData.columns()) {
                 if (!colName.equals("quality")) {
-                    val = val.withColumn(colName, val.col(colName).cast("float"));
+                    validationData = validationData.withColumn(colName, validationData.col(colName).cast("float"));
                 }
             }
-            val = val.withColumn("label", val.col("quality").cast("double")).drop("quality");
+            validationData = validationData.withColumnRenamed("quality", "label");
 
-            // Dynamically extract feature columns
-            String[] featureCols = Arrays.stream(val.columns())
-                    .filter(col -> !col.equals("label"))
-                    .toArray(String[]::new);
+            // Select feature columns
+            String[] featureCols = {
+                    "fixed acidity", "volatile acidity", "citric acid", "residual sugar",
+                    "chlorides", "free sulfur dioxide", "total sulfur dioxide",
+                    "density", "pH", "sulphates", "alcohol"
+            };
 
-            // Combine feature columns into a single vector column ("features")
+            // Assemble features
             VectorAssembler assembler = new VectorAssembler()
                     .setInputCols(featureCols)
                     .setOutputCol("features");
 
-            Dataset<Row> df_tr = assembler.transform(val).select("features", "label");
+            Dataset<Row> assembledData = assembler.transform(validationData).select("features", "label");
 
-            df_tr.printSchema();
-            df_tr.show();
+            assembledData.printSchema();
+            assembledData.show(5);
 
-            // Validate schema
-            if (!Arrays.asList(df_tr.columns()).contains("label")) {
-                throw new IllegalArgumentException("Label column is missing after preprocessing.");
-            }
-
-            // Convert the DataFrame into an RDD of LabeledPoint objects
-            JavaRDD<LabeledPoint> dataset = toLabeledPoint(sc, df_tr);
+            // Convert DataFrame to JavaRDD<LabeledPoint>
+            JavaRDD<LabeledPoint> labeledPoints = toLabeledPoint(sc, assembledData);
 
             // Load the pre-trained Random Forest model
-            RandomForestModel RFModel = RandomForestModel.load(sc.sc(), "/home/ubuntu/models/random-forest-model");
+            RandomForestModel model = RandomForestModel.load(sc.sc(), modelPath);
 
-            // Confirm model was loaded
             System.out.println("Model loaded successfully");
 
-            // Use the Random Forest model to make predictions on the dataset
-            JavaRDD<Double> predictions = RFModel.predict(dataset.map(LabeledPoint::features));
-
-            // Print the predictions
-            predictions.take(10).forEach(prediction -> System.out.println("Prediction: " + prediction));
-
-            // Map the dataset to an RDD for evaluation
-            JavaRDD<Tuple2<Double, Double>> labelsAndPredictions = dataset
-                    .map(lp -> new Tuple2<>(lp.label(), RFModel.predict(lp.features())));
-
-            // Print the labels and predictions for a sample
-            labelsAndPredictions.take(10).forEach(pair -> 
-                System.out.println("Label: " + pair._1 + ", Prediction: " + pair._2)
+            // Make predictions
+            JavaRDD<Tuple2<Double, Double>> labelsAndPredictions = labeledPoints.map(lp ->
+                    new Tuple2<>(lp.label(), model.predict(lp.features()))
             );
 
-            // Create a DataFrame for displaying results
-            Dataset<Row> labelPred = spark.createDataFrame(labelsAndPredictions, Tuple2.class).toDF("label", "Prediction");
-            labelPred.show();
+            // Save predictions to a file
+            savePredictionsToFile(labelsAndPredictions, outputPath);
 
-            // Evaluate the model using MulticlassMetrics
-            JavaRDD<Tuple2<Object, Object>> metricsRDD = labelsAndPredictions.map(
-                t -> new Tuple2<>((Object) t._1, (Object) t._2)
-            );
-            MulticlassMetrics metrics = new MulticlassMetrics(metricsRDD.rdd());
-
-            // Calculate and print metrics
+            // Evaluate the model
+            MulticlassMetrics metrics = new MulticlassMetrics(labelsAndPredictions.rdd());
+            System.out.println("Evaluation Metrics:");
+            System.out.println("Weighted F1-score: " + metrics.weightedFMeasure());
             System.out.println("Confusion Matrix:\n" + metrics.confusionMatrix());
             System.out.println("Weighted Precision: " + metrics.weightedPrecision());
             System.out.println("Weighted Recall: " + metrics.weightedRecall());
-            System.out.println("Weighted F1-score: " + metrics.weightedFMeasure());
             System.out.println("Accuracy: " + metrics.accuracy());
+
+            // Calculate test error
+            long testErrors = labelsAndPredictions.filter(lp -> !lp._1().equals(lp._2())).count();
+            double testErrorRate = (double) testErrors / labeledPoints.count();
+            System.out.println("Test Error Rate: " + testErrorRate);
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -115,15 +111,34 @@ public class WineQualityTraining {
         }
     }
 
-    // Helper method 
     private static JavaRDD<LabeledPoint> toLabeledPoint(JavaSparkContext sc, Dataset<Row> df) {
         return df.toJavaRDD().map(row -> {
-            double label = row.getDouble(row.fieldIndex("label")); // Extract the label
-            // Convert ML Vector to MLlib Vector
-            org.apache.spark.ml.linalg.Vector mlVector = row.getAs("features"); // Features column is ML Vector
-            org.apache.spark.mllib.linalg.Vector mllibVector = org.apache.spark.mllib.linalg.Vectors.fromML(mlVector); // Convert to MLlib vector
-            
-            return new LabeledPoint(label, mllibVector); // Create LabeledPoint
+            double label = row.getDouble(row.fieldIndex("label"));
+            org.apache.spark.ml.linalg.Vector mlVector = row.getAs("features");
+            org.apache.spark.mllib.linalg.Vector mllibVector = org.apache.spark.mllib.linalg.Vectors.fromML(mlVector);
+            return new LabeledPoint(label, mllibVector);
         });
+    }
+
+    private static void savePredictionsToFile(JavaRDD<Tuple2<Double, Double>> labelsAndPredictions, String outputPath) {
+        try {
+            // Collect all predictions to the driver
+            List<String> formattedPredictions = labelsAndPredictions
+                    .map(pair -> "Label: " + pair._1 + ", Prediction: " + pair._2)
+                    .collect();
+
+            // Write predictions to a single file
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter(outputPath))) {
+                for (String prediction : formattedPredictions) {
+                    writer.write(prediction);
+                    writer.newLine();
+                }
+            }
+
+            System.out.println("Predictions saved to: " + outputPath);
+        } catch (IOException e) {
+            System.err.println("Error writing predictions to file: " + e.getMessage());
+            e.printStackTrace();
+        }
     }
 }
