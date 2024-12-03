@@ -48,12 +48,12 @@ public class RandomForestTrainer {
         String[] originalColumns = trainingData.columns();
         String[] cleanedColumns = new String[originalColumns.length];
 
-        // Generate cleaned column names
+        // Generate cleaned column names by removing extra quotes
         for (int i = 0; i < originalColumns.length; i++) {
-            cleanedColumns[i] = originalColumns[i].replaceAll("\"", "").trim();
+            cleanedColumns[i] = originalColumns[i].replaceAll("\"", "").trim(); // Clean the column names
         }
 
-        // Rename columns in the DataFrame
+        // Rename columns in the DataFrame to use the cleaned column names
         for (int i = 0; i < originalColumns.length; i++) {
             trainingData = trainingData.withColumnRenamed(originalColumns[i], cleanedColumns[i]);
         }
