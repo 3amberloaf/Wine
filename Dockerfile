@@ -1,6 +1,5 @@
 # Use an official OpenJDK runtime as the base image
-FROM --platform=linux/arm64 openjdk:11-jdk-slim
-
+FROM openjdk:11-jdk-slim
 
 # Install necessary dependencies
 RUN apt-get update && apt-get install -y \
