@@ -24,19 +24,13 @@ public class TrainModel {
     public static void main(String[] args) {
         logger.info("Starting TrainModel...");
 
-        // Fetch AWS credentials from environment variables
-        String awsAccessKey = System.getenv("AWS_ACCESS_KEY_ID");
-        String awsSecretKey = System.getenv("AWS_SECRET_ACCESS_KEY");
-        String awsSessionToken = System.getenv("AWS_SESSION_TOKEN"); 
 
         // Configure Spark
         SparkConf conf = new SparkConf()
             .setAppName("TrainModel")
             .setMaster("local[*]")
-            .set("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
-            .set("spark.hadoop.fs.s3a.access.key", awsAccessKey)
-            .set("spark.hadoop.fs.s3a.secret.key", awsSecretKey)
-            .set("spark.hadoop.fs.s3a.session.token", awsSessionToken);
+            .set("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
+
             
             JavaSparkContext sc = new JavaSparkContext(conf);
             SparkSession spark = SparkSession.builder().config(conf).getOrCreate();

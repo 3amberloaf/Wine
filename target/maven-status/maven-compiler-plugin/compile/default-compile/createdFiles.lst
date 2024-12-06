@@ -1,2 +1,2 @@
-com/example/RandomForestTrainer.class
-com/example/WineQualityTraining.class
+com/example/WineQualityPrediction.class
+com/example/TrainModel.class
