@@ -25,13 +25,13 @@ public class TrainModel {
         logger.info("Starting TrainModel...");
 
 
-        // Configure Spark
+        // Configure Spark app
         SparkConf conf = new SparkConf()
             .setAppName("TrainModel")
             .setMaster("local[*]")
             .set("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem");
 
-            
+            // Initialize Spark context and session
             JavaSparkContext sc = new JavaSparkContext(conf);
             SparkSession spark = SparkSession.builder().config(conf).getOrCreate();
     
@@ -40,7 +40,7 @@ public class TrainModel {
             String trainingPath = "s3a://winesparkbucket/TrainingDataset.csv";
             String modelPath = "s3a://winesparkbucket/random-forest-model";
     
-            // Load the training dataset
+            // Load the training dataset from s3
             Dataset<Row> trainingData = spark.read()
                     .format("csv")
                     .option("header", "true")
@@ -57,12 +57,14 @@ public class TrainModel {
             String[] newColumns = Arrays.stream(originalColumns)
                                         .map(name -> name.replaceAll("\"", "").trim())
                                         .toArray(String[]::new);
+
+            // Rename columns in the dataset to use the cleaned column names
             for (int i = 0; i < originalColumns.length; i++) {
                 trainingData = trainingData.withColumnRenamed(originalColumns[i], newColumns[i]);
             }
     
             // Identify label and feature columns dynamically
-            String labelColumn = "quality"; // Specify your label column
+            String labelColumn = "quality"; 
             List<String> featureColumns = new ArrayList<>();
             for (String column : newColumns) {
                 if (!column.equals(labelColumn)) {
@@ -70,14 +72,13 @@ public class TrainModel {
                 }
             }
     
-            // Validate the existence of the label column
+            // Make sure label column is there
             if (!Arrays.asList(newColumns).contains(labelColumn)) {
                 logger.error("Label column '{}' not found. Exiting.", labelColumn);
                 sc.close();
                 return;
             }
     
-            // Cast feature columns to float and label column to double
             for (String colName : featureColumns) {
                 trainingData = trainingData.withColumn(colName, trainingData.col(colName).cast("float"));
             }
@@ -98,7 +99,7 @@ public class TrainModel {
             assembledData.printSchema();
             assembledData.show(5);
     
-            // Convert DataFrame to JavaRDD<LabeledPoint>
+            // Convert DataFrame to JavaRDD<LabeledPoint> for training
             JavaRDD<LabeledPoint> labeledPoints = toLabeledPoint(sc, assembledData);
     
             logger.info("Data converted to JavaRDD<LabeledPoint>.");
@@ -109,19 +110,19 @@ public class TrainModel {
             // Train the Random Forest model
             RandomForestModel model = RandomForest.trainClassifier(
                     labeledPoints,            // JavaRDD
-                    10,                       // Number of classes
-                    categoricalFeaturesInfo,  // Categorical features map
-                    100,                      // Number of trees
-                    "auto",                   // Feature subset strategy
-                    "gini",                   // Impurity
-                    10,                       // Max depth
-                    32,                       // Max bins
-                    12345                     // Random seed
+                    10,                       
+                    categoricalFeaturesInfo,  
+                    100,                     
+                    "auto",                 
+                    "gini",                   
+                    10,                      
+                    32,                     
+                    12345                   
             );
     
             logger.info("Random Forest model trained successfully.");
     
-            // Save the trained model
+            // Save the trained model to s3
             try {
                 model.save(sc.sc(), modelPath);
                 logger.info("Model saved successfully to path: {}", modelPath);
@@ -133,7 +134,8 @@ public class TrainModel {
             sc.close();
             logger.info("Spark context closed. Exiting TrainModel.");
         }
-    
+        
+        // Converts a Dataset<Row> into an RDD of LabeledPoint for MLlib compatibility
         private static JavaRDD<LabeledPoint> toLabeledPoint(JavaSparkContext sc, Dataset<Row> df) {
             return df.toJavaRDD().map(row -> {
                 double label = row.getDouble(row.fieldIndex("label"));
