@@ -10,8 +10,11 @@ RUN apt-get update && apt-get install -y \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Set environment variables for Spark and Hadoop
-ENV SPARK_VERSION=3.5.3
-ENV HADOOP_VERSION=3.3.1
+ENV SPARK_VERSION=${SPARK_VERSION:-3.5.3}
+ENV HADOOP_VERSION=${HADOOP_VERSION:-3.3.1}
+ENV AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-default_key}
+ENV AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-default_secret}
+ENV AWS_SESSION_TOKEN=${AWS_SESSION_TOKEN:-default_session}
 ENV SPARK_HOME=/home/ubuntu/spark
 ENV HADOOP_HOME=/opt/hadoop
 ENV PATH=$SPARK_HOME/bin:$HADOOP_HOME/bin:$PATH
