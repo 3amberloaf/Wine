@@ -1,8 +1,10 @@
-# Compiled class file
-*.class
+# Environment variable files
 .env
 
-# Log file
+# Compiled class files
+*.class
+
+# Log files
 *.log
 
 # BlueJ files
@@ -11,16 +13,25 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
-# Package Files #
+# Java Archives
 *.jar
 *.war
 *.nar
 *.ear
+
+# Compressed files
 *.zip
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# Virtual machine crash logs
 hs_err_pid*
 replay_pid*
+core
+
+# Hadoop config files
 core-site.xml
+
+# General exclusions
+.DS_Store  # macOS-specific metadata
+Thumbs.db  # Windows-specific metadata
